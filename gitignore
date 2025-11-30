@@ -9,15 +9,19 @@ __pycache__/
 # Environment variables
 .env
 
-
-
-
-
-
 # Logs
 *.log
-
 
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# PyCharm
+/.idea/
+/.vscode/
