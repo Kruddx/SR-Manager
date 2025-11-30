@@ -19,20 +19,17 @@
         {% if not logged_in %}
             <p>Добро пожаловать! Для начала работы войдите через Discord.</p>
             <a href="/login" class="btn">Войти через Discord</a>
-        {% else %}
-            <div class="user-info">
-                <h2>Привет, {{ user.discord_username }}!</h2>
-                <p>Вы успешно авторизованы.</p>
-                <a href="/logout" class="btn">Выйти</a>
-            </div>
-
-            <h3>Функционал в разработке:</h3>
-            <ul>
-                <li>Загрузка JSON данных</li>
-                <li>Управление рейдами</li>
-                <li>Генерация отчетов</li>
-            </ul>
-        {% endif %}
+{% else %}
+    <div class="user-info">
+        <h2>Привет, {{ user.discord_username }}!</h2>
+        <p>Добро пожаловать в SR-Manager!</p>
+        <div style="margin-top: 15px;">
+            <a href="/dashboard" class="btn">Перейти в дашборд</a>
+            <a href="/upload" class="btn">Загрузить данные</a>
+            <a href="/logout" class="btn">Выйти</a>
+        </div>
+    </div>
+{% endif %}
     </div>
 </body>
 </html>
