@@ -2,13 +2,10 @@
 venv/
 .venv/
 env/
-.env/
 
 # IDE
 .idea/
 .vscode/
-*.swp
-*.swo
 
 # Python
 __pycache__/
@@ -33,10 +30,8 @@ wheels/
 *.egg
 MANIFEST
 
-# Database
-*.db
-*.sqlite3
-*.sqlite
+# Instance folder for Flask
+instance/
 
 # Environment variables
 .env
@@ -50,3 +45,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
