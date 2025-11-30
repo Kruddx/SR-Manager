@@ -1,134 +1,124 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генерация JSON - SR-Manager</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .nav { margin-bottom: 30px; }
-        .nav a { margin-right: 15px; text-decoration: none; color: #5865F2; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        select, button { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        .btn { background: #5865F2; color: white; border: none; cursor: pointer; }
-        .btn:hover { background: #4752C4; }
-        .result { margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 5px; }
-        textarea { width: 100%; height: 200px; font-family: monospace; padding: 10px; }
-        .copy-btn { margin-top: 10px; }
-        .stats { display: none; margin-top: 20px; padding: 15px; background: #e8f4fd; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="nav">
-            <a href="/">Главная</a>
-            <a href="/dashboard">Дашборд</a>
-            <a href="/upload">Загрузить данные</a>
-            <a href="/generate">Генерация JSON</a>
-            <a href="/logout">Выйти</a>
-        </div>
+{% extends "base.html" %}
 
-        <h1>Генерация JSON данных</h1>
+{% block title %}Генерация JSON - SR-Manager{% endblock %}
 
+{% block content %}
+<div class="grid grid-2">
+    <div class="card">
+        <h1>🔄 Генерация JSON данных</h1>
+        
         <div class="form-group">
             <label for="instances">Выберите instances:</label>
-            <select id="instances">
+            <select id="instances" class="form-control">
                 <option value="">-- Выберите instances --</option>
-                <!-- Опции будут добавлены через JavaScript -->
             </select>
-            <button class="btn" onclick="generateJson()">Сгенерировать JSON</button>
         </div>
+        
+        <button class="btn btn-success" onclick="generateJson()" style="width: 100%;">
+            🚀 Сгенерировать JSON
+        </button>
 
-        <div id="stats" class="stats">
-            <h4>Статистика:</h4>
-            <p>Обработано игроков: <span id="playerCount">0</span></p>
-            <p>Instances: <span id="instancesName">-</span></p>
+        <div id="stats" class="card" style="display: none; margin-top: 20px;">
+            <h4>📊 Статистика:</h4>
+            <p>Обработано игроков: <strong><span id="playerCount">0</span></strong></p>
+            <p>Instances: <strong><span id="instancesName">-</span></strong></p>
         </div>
-
-        <div id="result" class="result" style="display: none;">
-            <h3>Результат (base64):</h3>
-            <textarea id="outputData" readonly></textarea>
-            <button class="btn copy-btn" onclick="copyToClipboard()">Копировать в буфер</button>
-        </div>
-
-        <div id="error" style="display: none; color: red; margin-top: 20px;"></div>
     </div>
 
-    <script>
-    // Загружаем список instances при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        loadInstances();
-    });
+    <div class="card">
+        <div id="result" style="display: none;">
+            <h3>📄 Результат (base64):</h3>
+            <textarea id="outputData" class="form-control" readonly></textarea>
+            <button class="btn btn-secondary copy-btn" onclick="copyToClipboard()" style="width: 100%; margin-top: 10px;">
+                📋 Копировать в буфер
+            </button>
+        </div>
 
-    function loadInstances() {
-        fetch('/api/instances')
-            .then(response => response.json())
-            .then(data => {
-                const select = document.getElementById('instances');
-                select.innerHTML = '<option value="">-- Выберите instances --</option>';
+        <div id="error" style="display: none;" class="alert alert-error"></div>
 
-                data.instances.forEach(instance => {
-                    const option = document.createElement('option');
-                    option.value = instance;
-                    option.textContent = instance;
-                    select.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Ошибка загрузки instances:', error);
-                showError('Ошибка загрузки списка instances: ' + error);
+        <div style="margin-top: 20px;">
+            <h4>💡 Как использовать:</h4>
+            <ol style="line-height: 1.6;">
+                <li>Выберите instances из списка</li>
+                <li>Нажмите "Сгенерировать JSON"</li>
+                <li>Скопируйте полученные данные</li>
+                <li>Используйте в нужном сервисе</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript код остается таким же, как в предыдущей версии
+document.addEventListener('DOMContentLoaded', function() {
+    loadInstances();
+});
+
+function loadInstances() {
+    fetch('/api/instances')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('instances');
+            select.innerHTML = '<option value="">-- Выберите instances --</option>';
+            
+            data.instances.forEach(instance => {
+                const option = document.createElement('option');
+                option.value = instance;
+                option.textContent = instance;
+                select.appendChild(option);
             });
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки instances:', error);
+            showError('Ошибка загрузки списка instances: ' + error);
+        });
+}
+
+function generateJson() {
+    const instances = document.getElementById('instances').value;
+    if (!instances) {
+        alert('Выберите instances');
+        return;
     }
 
-    function generateJson() {
-        const instances = document.getElementById('instances').value;
-        if (!instances) {
-            alert('Выберите instances');
-            return;
-        }
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('stats').style.display = 'block';
+    document.getElementById('playerCount').textContent = 'загрузка...';
+    document.getElementById('instancesName').textContent = instances;
 
-        // Показываем загрузку
-        document.getElementById('result').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-        document.getElementById('stats').style.display = 'block';
-        document.getElementById('playerCount').textContent = 'загрузка...';
-        document.getElementById('instancesName').textContent = instances;
-
-        fetch(`/generate/${encodeURIComponent(instances)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('outputData').value = data.encoded_data;
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('error').style.display = 'none';
-                    document.getElementById('playerCount').textContent = data.total_players;
-                    document.getElementById('instancesName').textContent = data.instances;
-                } else {
-                    showError(data.error);
-                    document.getElementById('stats').style.display = 'none';
-                }
-            })
-            .catch(error => {
-                showError('Ошибка при генерации JSON: ' + error);
+    fetch(`/generate/${encodeURIComponent(instances)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('outputData').value = data.encoded_data;
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+                document.getElementById('playerCount').textContent = data.total_players;
+                document.getElementById('instancesName').textContent = data.instances;
+            } else {
+                showError(data.error);
                 document.getElementById('stats').style.display = 'none';
-            });
-    }
+            }
+        })
+        .catch(error => {
+            showError('Ошибка при генерации JSON: ' + error);
+            document.getElementById('stats').style.display = 'none';
+        });
+}
 
-    function copyToClipboard() {
-        const textarea = document.getElementById('outputData');
-        textarea.select();
-        document.execCommand('copy');
-        alert('Скопировано в буфер обмена!');
-    }
+function copyToClipboard() {
+    const textarea = document.getElementById('outputData');
+    textarea.select();
+    document.execCommand('copy');
+    alert('✅ Скопировано в буфер обмена!');
+}
 
-    function showError(message) {
-        document.getElementById('error').textContent = message;
-        document.getElementById('error').style.display = 'block';
-        document.getElementById('result').style.display = 'none';
-        document.getElementById('stats').style.display = 'none';
-    }
-    </script>
-</body>
-</html>
+function showError(message) {
+    document.getElementById('error').textContent = message;
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('stats').style.display = 'none';
+}
+</script>
+{% endblock %}

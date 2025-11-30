@@ -1,53 +1,55 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Загрузка данных - SR-Manager</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        textarea { height: 200px; font-family: monospace; }
-        .btn { padding: 10px 20px; background: #5865F2; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .btn:hover { background: #4752C4; }
-        .nav { margin-bottom: 30px; }
-        .nav a { margin-right: 15px; text-decoration: none; color: #5865F2; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="nav">
-            <a href="/">Главная</a>
-            <a href="/dashboard">Дашборд</a>
-            <a href="/upload">Загрузить данные</a>
-            <a href="/logout">Выйти</a>
-        </div>
+{% extends "base.html" %}
 
-        <h1>Загрузка данных рейда</h1>
+{% block title %}Загрузка данных - SR-Manager{% endblock %}
 
+{% block content %}
+<div class="grid grid-2">
+    <div class="card">
+        <h1>📥 Загрузка данных рейда</h1>
+        
         <form method="POST">
             <div class="form-group">
                 <label for="date">Дата рейда:</label>
-                <input type="date" id="date" name="date" required>
+                <input type="date" id="date" name="date" class="form-control" required>
             </div>
-
+            
             <div class="form-group">
                 <label for="encrypted_data">Данные в формате base64:</label>
-                <textarea id="encrypted_data" name="encrypted_data" placeholder="Вставьте сюда ваши данные в формате base64..." required></textarea>
+                <textarea id="encrypted_data" name="encrypted_data" 
+                         placeholder="Вставьте сюда ваши данные в формате base64..." 
+                         class="form-control" required></textarea>
             </div>
-
-            <button type="submit" class="btn">Загрузить данные</button>
+            
+            <button type="submit" class="btn btn-success" style="width: 100%;">
+                📤 Загрузить данные
+            </button>
         </form>
+    </div>
 
-        <div style="margin-top: 30px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
-            <h3>Инструкция:</h3>
-            <p>1. Укажите дату проведения рейда</p>
-            <p>2. Вставьте данные в формате base64</p>
-            <p>3. Нажмите "Загрузить данные"</p>
+    <div class="card">
+        <h3>📋 Инструкция по загрузке</h3>
+        <div style="line-height: 1.6;">
+            <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                <strong>1. Укажите дату проведения рейда</strong>
+                <p style="margin: 5px 0 0 0; color: #666;">Выберите дату, когда был проведен рейд</p>
+            </div>
+            
+            <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                <strong>2. Вставьте данные в формате base64</strong>
+                <p style="margin: 5px 0 0 0; color: #666;">Скопируйте данные из источника и вставьте в поле</p>
+            </div>
+            
+            <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                <strong>3. Нажмите "Загрузить данные"</strong>
+                <p style="margin: 5px 0 0 0; color: #666;">Система автоматически обработает и сохранит данные</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="/generate" class="btn btn-secondary" style="width: 100%; text-align: center;">
+                🔄 Перейти к генерации JSON
+            </a>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

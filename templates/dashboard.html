@@ -1,78 +1,66 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд - SR-Manager</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .nav { margin-bottom: 30px; }
-        .nav a { margin-right: 15px; text-decoration: none; color: #5865F2; }
-        .raid-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
-        .btn { padding: 8px 15px; background: #5865F2; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-danger { background: #dc3545; }
-        .btn:hover { opacity: 0.8; }
-        .empty-state { text-align: center; padding: 40px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="nav">
-            <a href="/">Главная</a>
-            <a href="/dashboard">Дашборд</a>
-            <a href="/upload">Загрузить данные</a>
-            <a href="/logout">Выйти</a>
-        </div>
+{% extends "base.html" %}
 
-        <h1>Дашборд - Ваши рейды</h1>
-        <p>Привет, {{ user.discord_username }}!</p>
+{% block title %}Дашборд - SR-Manager{% endblock %}
 
-        <a href="/upload" class="btn">+ Добавить новый рейд</a>
-
-        <div style="margin-top: 30px;">
-            {% if raids %}
-                <h2>История рейдов ({{ raids|length }})</h2>
-                {% for raid in raids %}
-                <div class="raid-card">
-                    <h3>Рейд от {{ raid.date.strftime('%d.%m.%Y') }}</h3>
-                    <p><strong>Instances:</strong> {{ raid.instances }}</p>
-                    <p><strong>Загружено:</strong> {{ raid.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
-                    <button class="btn btn-danger" onclick="deleteRaid({{ raid.id }})">Удалить</button>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state">
-                    <h3>У вас пока нет загруженных рейдов</h3>
-                    <p>Начните с загрузки ваших первых данных</p>
-                    <a href="/upload" class="btn">Загрузить данные</a>
-                </div>
-            {% endif %}
-        </div>
+{% block content %}
+<div class="card">
+    <h1>📊 Дашборд - Ваши рейды</h1>
+    <p>Привет, {{ user.discord_username }}! Здесь вы можете управлять своими данными.</p>
+    
+    <div style="margin: 30px 0; display: flex; gap: 15px; flex-wrap: wrap;">
+        <a href="/upload" class="btn btn-success">+ Добавить новый рейд</a>
+        <a href="/generate" class="btn btn-secondary">🔄 Генерация JSON</a>
     </div>
+</div>
 
-    <script>
-    function deleteRaid(raidId) {
-        if (confirm('Вы уверены, что хотите удалить этот рейд?')) {
-            fetch(`/raid/${raidId}/delete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Ошибка при удалении: ' + data.error);
-                }
-            })
-            .catch(error => {
-                alert('Ошибка при удалении: ' + error);
-            });
-        }
+<div class="card">
+    {% if raids %}
+        <h2>История рейдов ({{ raids|length }})</h2>
+        <div class="grid">
+            {% for raid in raids %}
+            <div class="card" style="position: relative;">
+                <h3>🎯 Рейд от {{ raid.date.strftime('%d.%m.%Y') }}</h3>
+                <p><strong>Instances:</strong> {{ raid.instances }}</p>
+                <p><strong>Загружено:</strong> {{ raid.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                <button class="btn btn-danger" onclick="deleteRaid({{ raid.id }})" 
+                        style="position: absolute; top: 20px; right: 20px;">
+                    🗑️ Удалить
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px;">
+            <h3>📭 У вас пока нет загруженных рейдов</h3>
+            <p>Начните с загрузки ваших первых данных</p>
+            <a href="/upload" class="btn btn-success" style="margin-top: 20px;">
+                📥 Загрузить данные
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function deleteRaid(raidId) {
+    if (confirm('Вы уверены, что хотите удалить этот рейд?')) {
+        fetch(`/raid/${raidId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка при удалении: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Ошибка при удалении: ' + error);
+        });
     }
-    </script>
-</body>
-</html>
+}
+</script>
+{% endblock %}

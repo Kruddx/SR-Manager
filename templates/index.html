@@ -1,36 +1,42 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SR-Manager</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .btn { padding: 10px 20px; background: #5865F2; color: white; text-decoration: none; border-radius: 5px; }
-        .btn:hover { background: #4752C4; }
-        .user-info { background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>SR-Manager 🚀</h1>
+{% extends "base.html" %}
 
+{% block content %}
+<div class="grid">
+    <div class="card">
+        <h1>SR-Manager 🚀</h1>
+        
         {% if not logged_in %}
             <p>Добро пожаловать! Для начала работы войдите через Discord.</p>
             <a href="/login" class="btn">Войти через Discord</a>
-{% else %}
-    <div class="user-info">
-        <h2>Привет, {{ user.discord_username }}!</h2>
-        <p>Добро пожаловать в SR-Manager!</p>
-        <div style="margin-top: 15px;">
-            <a href="/dashboard" class="btn">Перейти в дашборд</a>
-            <a href="/upload" class="btn">Загрузить данные</a>
-            <a href="/generate">Генерация JSON</a>
-            <a href="/logout" class="btn">Выйти</a>
-        </div>
+        {% else %}
+            <div class="user-welcome">
+                <h2>Привет, {{ user.discord_username }}!</h2>
+                <p>Добро пожаловать в SR-Manager - ваш помощник для управления рейдами!</p>
+                
+                <div class="grid grid-3" style="margin-top: 30px; gap: 15px;">
+                    <a href="/dashboard" class="btn">
+                        📊 Дашборд
+                    </a>
+                    <a href="/upload" class="btn btn-success">
+                        📥 Загрузить данные
+                    </a>
+                    <a href="/generate" class="btn btn-secondary">
+                        🔄 Генерация JSON
+                    </a>
+                </div>
+            </div>
+        {% endif %}
     </div>
-{% endif %}
+
+    {% if logged_in %}
+    <div class="card">
+        <h3>Быстрый старт</h3>
+        <ol style="line-height: 1.6;">
+            <li><strong>Загрузите данные</strong> - используйте форму загрузки для добавления данных рейда</li>
+            <li><strong>Просмотрите историю</strong> - в дашборде вы увидите все ваши загруженные рейды</li>
+            <li><strong>Сгенерируйте JSON</strong> - создайте готовые данные для использования в других сервисах</li>
+        </ol>
     </div>
-</body>
-</html>
+    {% endif %}
+</div>
+{% endblock %}
