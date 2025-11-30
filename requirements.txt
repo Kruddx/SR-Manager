@@ -1,5 +1,7 @@
+# requirements.txt
 flask
 gunicorn
 flask-sqlalchemy
 requests
 python-dateutil
+python-dotenv

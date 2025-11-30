@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SR-Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .btn { padding: 10px 20px; background: #5865F2; color: white; text-decoration: none; border-radius: 5px; }
+        .btn:hover { background: #4752C4; }
+        .user-info { background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SR-Manager 🚀</h1>
+
+        {% if not logged_in %}
+            <p>Добро пожаловать! Для начала работы войдите через Discord.</p>
+            <a href="/login" class="btn">Войти через Discord</a>
+        {% else %}
+            <div class="user-info">
+                <h2>Привет, {{ user.discord_username }}!</h2>
+                <p>Вы успешно авторизованы.</p>
+                <a href="/logout" class="btn">Выйти</a>
+            </div>
+
+            <h3>Функционал в разработке:</h3>
+            <ul>
+                <li>Загрузка JSON данных</li>
+                <li>Управление рейдами</li>
+                <li>Генерация отчетов</li>
+            </ul>
+        {% endif %}
+    </div>
+</body>
+</html>
