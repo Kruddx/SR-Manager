@@ -249,49 +249,69 @@ def generate_json(instances):
         user = User.query.get(session['user_id'])
 
         # Находим все рейды с указанным instances
-        raids = Raid.query.filter_by(user_id=user.id, instances=instances).all()
+        raids = Raid.query.filter_by(user_id=user.id, instances=instances).order_by(Raid.date.desc()).all()
 
         if not raids:
             return jsonify({'error': f'Не найдено рейдов с instances: {instances}'}), 404
 
-        # Собираем все reserves для этих рейдов
+        # Берем самый последний рейд (первый в отсортированном списке)
+        latest_raid = raids[0]
+
+        # Получаем reserves только из последнего рейда
+        latest_reserves = Reserve.query.filter_by(raid_id=latest_raid.id).all()
+
+        # Собираем ВСЕ reserves для этих instances (для подсчета sr_plus)
         all_reserves = []
         for raid in raids:
             reserves = Reserve.query.filter_by(raid_id=raid.id).all()
             all_reserves.extend(reserves)
 
-        # Группируем данные по имени игрока и item_id для подсчета sr_plus
-        player_items = {}
+        # Группируем ВСЕ данные по имени игрока и item_id для подсчета sr_plus
+        player_items_count = {}
 
         for reserve in all_reserves:
             name = reserve.name
             item_id = reserve.item_id
-            quality = reserve.quality
 
-            if name not in player_items:
-                player_items[name] = {}
+            if name not in player_items_count:
+                player_items_count[name] = {}
 
-            if item_id not in player_items[name]:
-                player_items[name][item_id] = {
-                    'quality': quality,
-                    'count': 0
-                }
+            player_items_count[name][item_id] = player_items_count[name].get(item_id, 0) + 1
 
-            player_items[name][item_id]['count'] += 1
-
-        # Формируем выходную структуру
+        # Формируем выходную структуру на основе ПОСЛЕДНЕГО рейда
         softreserves_output = []
 
-        for name, items_data in player_items.items():
+        # Группируем reserves последнего рейда по игрокам
+        latest_player_items = {}
+        for reserve in latest_reserves:
+            name = reserve.name
+            if name not in latest_player_items:
+                latest_player_items[name] = []
+
+            latest_player_items[name].append({
+                'id': reserve.item_id,
+                'quality': reserve.quality
+            })
+
+        # Формируем финальный вывод
+        for name, items in latest_player_items.items():
             items_list = []
-            for item_id, data in items_data.items():
+
+            for item in items:
+                item_id = item['id']
+                quality = item['quality']
+
+                # Берем sr_plus из общего подсчета по всем рейдам
+                sr_plus = player_items_count.get(name, {}).get(item_id, 1)
+
                 item_obj = {
                     'id': item_id,
-                    'quality': data['quality']
+                    'quality': quality
                 }
-                # Добавляем sr_plus только если count > 1
-                if data['count'] > 1:
-                    item_obj['sr_plus'] = data['count']
+
+                # Добавляем sr_plus только если больше 1
+                if sr_plus > 1:
+                    item_obj['sr_plus'] = sr_plus
 
                 items_list.append(item_obj)
 
@@ -313,7 +333,9 @@ def generate_json(instances):
             'success': True,
             'encoded_data': encoded_output,
             'instances': instances,
-            'total_players': len(softreserves_output)
+            'total_players': len(softreserves_output),
+            'latest_raid_date': latest_raid.date.isoformat(),
+            'total_raids_used': len(raids)
         })
 
     except Exception as e:
@@ -340,6 +362,48 @@ def debug_reserves():
         })
 
     return jsonify(debug_info)
+
+
+@app.route('/debug/player-stats/<instances>')
+def debug_player_stats(instances):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Не авторизован'}), 401
+
+    user = User.query.get(session['user_id'])
+
+    # Находим все рейды с указанным instances
+    raids = Raid.query.filter_by(user_id=user.id, instances=instances).order_by(Raid.date.desc()).all()
+
+    if not raids:
+        return jsonify({'error': 'Рейды не найдены'}), 404
+
+    latest_raid = raids[0]
+    all_reserves = []
+
+    for raid in raids:
+        reserves = Reserve.query.filter_by(raid_id=raid.id).all()
+        for reserve in reserves:
+            all_reserves.append({
+                'raid_date': raid.date.isoformat(),
+                'player': reserve.name,
+                'item_id': reserve.item_id,
+                'quality': reserve.quality
+            })
+
+    latest_reserves = Reserve.query.filter_by(raid_id=latest_raid.id).all()
+
+    return jsonify({
+        'latest_raid_date': latest_raid.date.isoformat(),
+        'total_raids': len(raids),
+        'all_reserves': all_reserves,
+        'latest_raid_reserves': [
+            {
+                'player': r.name,
+                'item_id': r.item_id,
+                'quality': r.quality
+            } for r in latest_reserves
+        ]
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

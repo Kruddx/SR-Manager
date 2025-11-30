@@ -22,6 +22,8 @@
             <h4>📊 Статистика:</h4>
             <p>Обработано игроков: <strong><span id="playerCount">0</span></strong></p>
             <p>Instances: <strong><span id="instancesName">-</span></strong></p>
+            <p>Последний рейд: <strong><span id="latestRaidDate">-</span></strong></p>
+            <p>Учтено рейдов: <strong><span id="totalRaids">-</span></strong></p>
         </div>
     </div>
 
@@ -37,19 +39,17 @@
         <div id="error" style="display: none;" class="alert alert-error"></div>
 
         <div style="margin-top: 20px;">
-            <h4>💡 Как использовать:</h4>
-            <ol style="line-height: 1.6;">
-                <li>Выберите instances из списка</li>
-                <li>Нажмите "Сгенерировать JSON"</li>
-                <li>Скопируйте полученные данные</li>
-                <li>Используйте в нужном сервисе</li>
-            </ol>
+            <h4>💡 Новая логика генерации:</h4>
+            <ul style="line-height: 1.6;">
+                <li><strong>Items берутся только из последнего рейда</strong></li>
+                <li><strong>sr_plus считается по всем рейдам</strong></li>
+                <li>Это позволяет обновлять список предметов, сохраняя историю повторений</li>
+            </ul>
         </div>
     </div>
 </div>
 
 <script>
-// JavaScript код остается таким же, как в предыдущей версии
 document.addEventListener('DOMContentLoaded', function() {
     loadInstances();
 });
@@ -60,7 +60,7 @@ function loadInstances() {
         .then(data => {
             const select = document.getElementById('instances');
             select.innerHTML = '<option value="">-- Выберите instances --</option>';
-            
+
             data.instances.forEach(instance => {
                 const option = document.createElement('option');
                 option.value = instance;
@@ -86,6 +86,8 @@ function generateJson() {
     document.getElementById('stats').style.display = 'block';
     document.getElementById('playerCount').textContent = 'загрузка...';
     document.getElementById('instancesName').textContent = instances;
+    document.getElementById('latestRaidDate').textContent = 'загрузка...';
+    document.getElementById('totalRaids').textContent = 'загрузка...';
 
     fetch(`/generate/${encodeURIComponent(instances)}`)
         .then(response => response.json())
@@ -96,6 +98,8 @@ function generateJson() {
                 document.getElementById('error').style.display = 'none';
                 document.getElementById('playerCount').textContent = data.total_players;
                 document.getElementById('instancesName').textContent = data.instances;
+                document.getElementById('latestRaidDate').textContent = new Date(data.latest_raid_date).toLocaleDateString('ru-RU');
+                document.getElementById('totalRaids').textContent = data.total_raids_used;
             } else {
                 showError(data.error);
                 document.getElementById('stats').style.display = 'none';
