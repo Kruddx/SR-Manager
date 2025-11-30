@@ -130,6 +130,27 @@ def dashboard():
     return render_template('dashboard.html', user=user, raids=raids)
 
 
+@app.route('/generate')
+def generate_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    return render_template('generate.html')
+
+
+@app.route('/api/instances')
+def get_instances():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Не авторизован'}), 401
+
+    user = User.query.get(session['user_id'])
+
+    # Получаем уникальные instances пользователя
+    instances = db.session.query(Raid.instances).filter_by(user_id=user.id).distinct().all()
+    instances = [instance[0] for instance in instances if instance[0]]
+
+    return jsonify({'instances': instances})
+
 @app.route('/raid/<int:raid_id>/delete', methods=['POST'])
 def delete_raid(raid_id):
     if 'user_id' not in session:
