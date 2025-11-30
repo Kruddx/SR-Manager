@@ -83,11 +83,20 @@ def upload():
             encrypted_data = request.form.get('encrypted_data')
             date_str = request.form.get('date')
 
+            if not encrypted_data or not date_str:
+                return "Ошибка: заполните все поля", 400
+
             # Декодируем base64 и парсим JSON
             json_data = json.loads(base64.b64decode(encrypted_data).decode('utf-8'))
 
+            # Валидируем JSON
+            is_valid, validation_msg = validate_input_json(json_data)
+            if not is_valid:
+                return f"Ошибка валидации JSON: {validation_msg}", 400
+
             # Извлекаем instances из JSON
-            instances = json_data.get('instances', 'unknown')
+            instances_list = json_data.get('metadata', {}).get('instances', [])
+            instances = instances_list[0] if instances_list else 'unknown'
 
             # Создаем запись в таблице Raid
             raid = Raid(
@@ -137,16 +146,179 @@ def delete_raid(raid_id):
     return jsonify({'error': 'Raid не найден'}), 404
 
 
+def validate_input_json(json_data):
+    """
+    Валидация структуры входного JSON
+    """
+    try:
+        # Проверяем обязательные поля
+        if 'metadata' not in json_data:
+            return False, "Отсутствует metadata"
+
+        if 'softreserves' not in json_data:
+            return False, "Отсутствует softreserves"
+
+        # Проверяем структуру softreserves
+        for i, player in enumerate(json_data['softreserves']):
+            if 'name' not in player:
+                return False, f"Отсутствует name у игрока #{i}"
+            if 'items' not in player:
+                return False, f"Отсутствует items у игрока {player.get('name', 'unknown')}"
+
+        return True, "OK"
+    except Exception as e:
+        return False, f"Ошибка валидации: {str(e)}"
+
 def process_raid_data(raid, json_data):
-    # TODO: Реализовать логику преобразования JSON в записи Reserves
-    # Это сложная часть - нужно уточнить структуру вашего JSON
-    print(f"Обрабатываем данные для raid {raid.id}")
-    print(f"JSON данные: {json_data}")
+    """
+    Преобразуем JSON данные в записи таблицы Reserves
+    """
+    try:
+        # Получаем instances из metadata
+        instances_list = json_data.get('metadata', {}).get('instences', [])
+        instances = instances_list[0] if instances_list else 'unknown'
 
-    # Заглушка - нужно реализовать реальную логику
-    # based on your JSON structure
-    pass
+        # Обрабатываем softreserves
+        softreserves = json_data.get('softreserves', [])
 
+        for player in softreserves:
+            name = player.get('name', '')
+            items = player.get('items', [])
+
+            for item in items:
+                item_id = item.get('id', 0)
+                quality = item.get('quality', 0)
+
+                # Создаем ключ на основе name и item_id
+                key = f"{name}_{item_id}"
+
+                # Создаем запись в таблице Reserves
+                reserve = Reserve(
+                    raid_id=raid.id,
+                    name=name,
+                    items=str(item_id),  # сохраняем как строку
+                    quality=quality,
+                    sr_plus=1,  # по умолчанию 1, будет пересчитываться при генерации
+                    item_id=item_id,
+                    date=raid.date,
+                    key=key
+                )
+                db.session.add(reserve)
+
+        # Обновляем instances в raid на основе metadata
+        if instances != 'unknown':
+            raid.instances = instances
+            db.session.add(raid)
+
+        db.session.commit()
+        print(f"✅ Обработано {len(softreserves)} игроков для raid {raid.id}")
+
+    except Exception as e:
+        print(f"❌ Ошибка обработки данных: {e}")
+        db.session.rollback()
+        raise
+
+
+@app.route('/generate/<instances>')
+def generate_json(instances):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Не авторизован'}), 401
+
+    try:
+        user = User.query.get(session['user_id'])
+
+        # Находим все рейды с указанным instances
+        raids = Raid.query.filter_by(user_id=user.id, instances=instances).all()
+
+        if not raids:
+            return jsonify({'error': f'Не найдено рейдов с instances: {instances}'}), 404
+
+        # Собираем все reserves для этих рейдов
+        all_reserves = []
+        for raid in raids:
+            reserves = Reserve.query.filter_by(raid_id=raid.id).all()
+            all_reserves.extend(reserves)
+
+        # Группируем данные по имени игрока и item_id для подсчета sr_plus
+        player_items = {}
+
+        for reserve in all_reserves:
+            name = reserve.name
+            item_id = reserve.item_id
+            quality = reserve.quality
+
+            if name not in player_items:
+                player_items[name] = {}
+
+            if item_id not in player_items[name]:
+                player_items[name][item_id] = {
+                    'quality': quality,
+                    'count': 0
+                }
+
+            player_items[name][item_id]['count'] += 1
+
+        # Формируем выходную структуру
+        softreserves_output = []
+
+        for name, items_data in player_items.items():
+            items_list = []
+            for item_id, data in items_data.items():
+                item_obj = {
+                    'id': item_id,
+                    'quality': data['quality']
+                }
+                # Добавляем sr_plus только если count > 1
+                if data['count'] > 1:
+                    item_obj['sr_plus'] = data['count']
+
+                items_list.append(item_obj)
+
+            softreserves_output.append({
+                'name': name,
+                'items': items_list
+            })
+
+        # Формируем финальный JSON
+        output_data = {
+            'softreserves': softreserves_output
+        }
+
+        # Кодируем в base64
+        json_string = json.dumps(output_data, ensure_ascii=False, separators=(',', ':'))
+        encoded_output = base64.b64encode(json_string.encode('utf-8')).decode('utf-8')
+
+        return jsonify({
+            'success': True,
+            'encoded_data': encoded_output,
+            'instances': instances,
+            'total_players': len(softreserves_output)
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/debug/reserves')
+def debug_reserves():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    reserves = Reserve.query.join(Raid).filter(Raid.user_id == user.id).all()
+
+    debug_info = []
+    for reserve in reserves:
+        debug_info.append({
+            'id': reserve.id,
+            'name': reserve.name,
+            'item_id': reserve.item_id,
+            'quality': reserve.quality,
+            'raid_date': reserve.raid.date,
+            'instances': reserve.raid.instances
+        })
+
+    return jsonify(debug_info)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
