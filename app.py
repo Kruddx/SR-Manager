@@ -3,6 +3,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 @app.route('/')
 def hello():
-    return 'SR-Manager is running! '
+    return 'SR-Manager is running! 1'
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
